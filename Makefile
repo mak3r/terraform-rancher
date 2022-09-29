@@ -8,18 +8,17 @@ K3S_UPGRADE_CHANNEL=v1.24
 RANCHER_SUBDOMAIN=scale-test
 SQL_PASSWORD="Kw309ii9mZpqD"
 export KUBECONFIG=kubeconfig
-BACKUP_NAME=kubeconfig.elemental_test
+BACKUP_NAME=kubeconfig.tf_rancher
 API_TOKEN="abcdef:EXAMPLEtokenGoesHere"
 DOWNSTREAM_COUNT=0
 RANCHER_NODE_COUNT=1
 
+.PHONY: destroy
 destroy:
 	-rm kubeconfig
 	cd terraform-setup && terraform destroy -auto-approve && rm terraform.tfstate terraform.tfstate.backup
 
-sleep:
-	sleep 60
-
+.PHONY: rancher
 rancher: infrastructure k3s_install rancher_app
 
 .PHONY: infrastructure
@@ -27,7 +26,7 @@ infrastructure:
 	echo "Creating infrastructure"
 	cd terraform-setup && terraform init && terraform apply -auto-approve -var rancher_url=$(RANCHER_SUBDOMAIN) -var db_password=$(SQL_PASSWORD) -var downstream_count=$(DOWNSTREAM_COUNT) -var rancher_node_count=$(RANCHER_NODE_COUNT)
 
-.PHONY: k3s_install
+.PHONY: k3s_sql_install
 k3s_sql_install: 
 	echo "Creating k3s cluster"
 	source bin/get-env.sh && [[ ! -n "$${IP1}" ]] && echo "Cluster will be single node" || "Cluster will be multi-node"
@@ -36,18 +35,22 @@ k3s_sql_install:
 	source bin/get-env.sh && scp -o StrictHostKeyChecking=no ec2-user@$${IP0}:/etc/rancher/k3s/k3s.yaml kubeconfig
 	source bin/get-env.sh && sed -i '' "s/127.0.0.1/$${IP0}/g" kubeconfig
 
+.PHONY: k3s_install
 k3s_install:
 	echo "Creating k3s cluster"
 	source bin/get-env.sh && ssh -o StrictHostKeyChecking=no ec2-user@$${IP0} '/bin/bash -s' -- < bin/install-k3s.sh "$(K3S_CHANNEL)" "$${IP0}"
 	source bin/get-env.sh && scp -o StrictHostKeyChecking=no ec2-user@$${IP0}:/etc/rancher/k3s/k3s.yaml kubeconfig
 	source bin/get-env.sh && sed -i '' "s/127.0.0.1/$${IP0}/g" kubeconfig
 
+.PHONY: backup_kubeconfig
 backup_kubeconfig:
 	cp ~/.kube/config ~/.kube/$(BACKUP_NAME)
 
+.PHONY: install_kubeconfig
 install_kubeconfig:
 	cp ./kubeconfig ~/.kube/config
 
+.PHONY: restore_kubeconfig
 restore_kubeconfig:
 	cp ~/.kube/$(BACKUP_NAME) ~/.kube/config
 
@@ -76,32 +79,24 @@ rancher_app:
 	echo
 	source bin/get-env.sh && echo https://$${URL}/dashboard/?setup=${ADMIN_SECRET}
 
-elemental_operator:
-	helm upgrade --create-namespace -n cattle-elemental-system --install elemental-operator oci://registry.opensuse.org/isv/rancher/elemental/charts/elemental/elemental-operator
-
-inventory:
-	kubectl apply -f e7l/cluster.yaml
-	kubectl apply -f e7l/registration.yaml
-	kubectl apply -f e7l/selector.yaml
-
-iso:
-	[[ ! -d build ]] && mkdir build || echo "build/ exists, continuing .."
-	curl -k $(shell kubectl get machineregistration -n fleet-default my-nodes -o jsonpath="{.status.registrationURL}") -o build/initial-registration.yaml
-	cd build && curl -sLO https://raw.githubusercontent.com/rancher/elemental/main/.github/elemental-iso-build && chmod +x elemental-iso-build
-	cd build && ./elemental-iso-build initial-registration.yaml
-
+.PHONY: backup_rancher
 backup_rancher:
 	kubectl get node -o=jsonpath='{.items[0].metadata.name}' > backup/node-name
 	source bin/get-env.sh && bin/backup-rancher.sh $${IP0} 
 
-restore_rancher: copy_to_remote k3s_install
+.PHONY: restore_rancher
+restore_rancher: infrastructure copy_to_remote k3s_install manual_steps
 
+.PHONY: copy_to_remote
 copy_to_remote:
 	source bin/get-env.sh && bin/restore-rancher.sh $${IP0}
-	echo
-	echo
-	echo "There is more to do .."
-	echo "1. make install_kubeconfig"
-	echo "2. kubectl delete node $(cat backup/node-name)"
-	echo "3. Authenticate Rancher again."
-	source bin/get-env.sh && echo https://$${URL}/dashboard/?setup=${ADMIN_SECRET}
+
+.PHONY: manual_steps
+manual_steps:
+	@echo
+	@echo
+	@echo "There is more to do .."
+	@echo "1. make install_kubeconfig"
+	@echo "2. kubectl delete node $$(cat backup/node-name)"
+	@printf "3. Authenticate Rancher again.  "
+	@source bin/get-env.sh && echo https://$${URL}/dashboard/?setup=${ADMIN_SECRET}
