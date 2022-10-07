@@ -54,3 +54,12 @@ Follow the quickstart steps to create, backup and restore rancher. Once the Ranc
 
 
 Restoration may take some time even after the make process ends as kubernetes must right itself by downloading and installing resources that are backedup in the datastore. Follow the post restore steps that make prints out to complete the restore process.
+
+## Advanced Arguments on Rancher Creation
+
+* Set the admin password, rancher subdomain and a local backup location
+    * `make RANCHER_SUBDOMAIN="your-best-subdomain" ADMIN_SECRET="one-two-three" BACKUP_LOCATION="backup/named_loc" LETS_ENCRYPT_USER="user@email.org" rancher`
+* Backup to a named backup location
+    * `make BACKUP_LOCATION="backup/named_loc" backup_rancher`
+* Restore from a named backup location
+    * `make BACKUP_LOCATION="backup/named_loc" restore_rancher`

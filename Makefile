@@ -5,13 +5,15 @@ SERVER_NUM=-1
 ADMIN_SECRET="6DfOqQMzaNFTg6VV"
 K3S_CHANNEL=v1.23
 K3S_UPGRADE_CHANNEL=v1.24
-RANCHER_SUBDOMAIN=scale-test
+RANCHER_SUBDOMAIN=tf-rancher
 SQL_PASSWORD="Kw309ii9mZpqD"
 export KUBECONFIG=kubeconfig
 BACKUP_NAME=kubeconfig.tf_rancher
 API_TOKEN="abcdef:EXAMPLEtokenGoesHere"
 DOWNSTREAM_COUNT=0
 RANCHER_NODE_COUNT=1
+BACKUP_LOCATION="backup"
+LETS_ENCRYPT_USER="user@email.org"
 
 .PHONY: destroy
 destroy:
@@ -72,17 +74,21 @@ rancher_app:
 	  --set hostname=$${URL} \
 	  --set bootstrapPassword=${ADMIN_SECRET} \
 	  --set replicas=2 \
+	  --set ingress.tls.source=letsEncrypt \
+	  --set letsEncrypt.email=${LETS_ENCRYPT_USER} \
+	  --set letsEncrypt.ingress.class=traefik \
 	  --create-namespace 
 	kubectl rollout status deployment -n cattle-system rancher
 	kubectl -n cattle-system wait --for=condition=ready certificate/tls-rancher-ingress
-	echo
-	echo
-	source bin/get-env.sh && echo https://$${URL}/dashboard/?setup=${ADMIN_SECRET}
+	@echo
+	@echo
+	@source bin/get-env.sh && echo https://$${URL}/dashboard/?setup=${ADMIN_SECRET}
 
 .PHONY: backup_rancher
 backup_rancher:
-	kubectl get node -o=jsonpath='{.items[0].metadata.name}' > backup/node-name
-	source bin/get-env.sh && bin/backup-rancher.sh $${IP0} 
+	mkdir -p ${BACKUP_LOCATION}
+	kubectl get node -o=jsonpath='{.items[0].metadata.name}' > ${BACKUP_LOCATION}/node-name
+	source bin/get-env.sh && bin/backup-rancher.sh $${IP0} ${BACKUP_LOCATION}
 
 .PHONY: restore_rancher
 restore_rancher: infrastructure copy_to_remote k3s_install manual_steps
