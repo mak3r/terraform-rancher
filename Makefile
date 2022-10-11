@@ -95,7 +95,7 @@ restore_rancher: infrastructure copy_to_remote k3s_install manual_steps
 
 .PHONY: copy_to_remote
 copy_to_remote:
-	source bin/get-env.sh && bin/restore-rancher.sh $${IP0}
+	source bin/get-env.sh && bin/restore-rancher.sh $${IP0} ${BACKUP_LOCATION}
 
 .PHONY: manual_steps
 manual_steps:
@@ -103,6 +103,10 @@ manual_steps:
 	@echo
 	@echo "There is more to do .."
 	@echo "1. make install_kubeconfig"
-	@echo "2. kubectl delete node $$(cat backup/node-name)"
-	@printf "3. Authenticate Rancher again.  "
-	@source bin/get-env.sh && echo https://$${URL}/dashboard/?setup=${ADMIN_SECRET}
+	@echo "2. kubectl delete node $$(cat ${BACKUP_LOCATION}/node-name)"
+	@printf "3. Login to Rancher again.  "
+	@source bin/get-env.sh && echo https://$${URL}/dashboard/
+
+.PHONY: list_restores
+list_restores:
+	@for d in `ls backup`;do echo "backup/$${d}"; done

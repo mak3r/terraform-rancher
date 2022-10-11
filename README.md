@@ -62,4 +62,5 @@ Restoration may take some time even after the make process ends as kubernetes mu
 * Backup to a named backup location
     * `make BACKUP_LOCATION="backup/named_loc" backup_rancher`
 * Restore from a named backup location
-    * `make BACKUP_LOCATION="backup/named_loc" restore_rancher`
+    * `make RANCHER_SUBDOMAIN="your-best-subdomain" BACKUP_LOCATION="backup/named_loc" restore_rancher`
+    * `RANCHER_SUBDOMAIN` is needed because the load balancer will get created in the infrastructure rebuild step
