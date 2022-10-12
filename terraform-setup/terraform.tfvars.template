@@ -7,3 +7,4 @@ db_instance_type = "db.m5.large"
 db_password = "*******"
 domain = "your.domain.com"
 rancher_url = "your-subdomain"
+make_rds = false

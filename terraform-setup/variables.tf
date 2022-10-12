@@ -57,3 +57,9 @@ variable "rancher_node_count" {
 	description = "The number of nodes to use for the rancher cluster"
 	default = 1
 }
+
+variable "make_rds" {
+	type = bool
+	description = "if true, make the rds database"
+	default = false
+}

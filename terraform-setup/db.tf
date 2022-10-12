@@ -1,4 +1,5 @@
 resource "aws_db_instance" "default" {
+  count                = var.make_rds ? 1 : 0
   allocated_storage    = 10
   engine               = "mariadb"
   engine_version       = "10.6"

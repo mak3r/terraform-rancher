@@ -18,13 +18,13 @@ output "downstream_count" {
 }
 
 output "rds_endpoint" {
-  value = "${aws_db_instance.default.endpoint}"
+  value = try("${aws_db_instance.default[0].endpoint}", "none")
 }
 
 output "sql_user" {
-  value = "${aws_db_instance.default.username}"
+  value = try("${aws_db_instance.default[0].username}", "none")
 }
 
 output "dbname" {
-  value = "${aws_db_instance.default.db_name}"
+  value = try("${aws_db_instance.default[0].db_name}", "none")
 }
