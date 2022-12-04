@@ -43,7 +43,7 @@ resource "aws_instance" "rancher" {
 resource "aws_instance" "downstreams" {
   count         = var.downstream_count
   ami           = data.aws_ami.suse.id
-  instance_type = "t3a.medium"
+  instance_type = var.instance_type
 
   key_name        = aws_key_pair.ssh_key_pair.key_name
   security_groups = [aws_security_group.sg_allowall.name]

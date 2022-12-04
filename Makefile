@@ -1,6 +1,6 @@
 SHELL := /bin/bash
 K3S_TOKEN="mak3rVA87qPxet2SB8BDuLPWfU2xnPUSoETYF"
-RANCHER_VERSION="2.6.6"
+RANCHER_VERSION="2.7.0"
 SERVER_NUM=-1
 ADMIN_SECRET="6DfOqQMzaNFTg6VV"
 K3S_CHANNEL=v1.23
@@ -68,12 +68,12 @@ rancher_app:
 		  --create-namespace 
 	kubectl rollout status deployment -n cert-manager cert-manager
 	kubectl rollout status deployment -n cert-manager cert-manager-webhook
-	source bin/get-env.sh && helm upgrade --install rancher rancher-stable/rancher \
+	source bin/get-env.sh && helm upgrade --install rancher rancher-latest/rancher \
 	  --namespace cattle-system \
 	  --version ${RANCHER_VERSION} \
 	  --set hostname=$${URL} \
 	  --set bootstrapPassword=${ADMIN_SECRET} \
-	  --set replicas=2 \
+	  --set replicas=1 \
 	  --set ingress.tls.source=letsEncrypt \
 	  --set letsEncrypt.email=${LETS_ENCRYPT_USER} \
 	  --set letsEncrypt.ingress.class=traefik \
@@ -103,10 +103,13 @@ manual_steps:
 	@echo
 	@echo "There is more to do .."
 	@echo "1. make install_kubeconfig"
-	@echo "2. kubectl delete node $$(cat ${BACKUP_LOCATION}/node-name)"
-	@printf "3. Login to Rancher again.  "
+	@printf "2. Login to Rancher again.  "
 	@source bin/get-env.sh && echo https://$${URL}/dashboard/
 
 .PHONY: list_restores
 list_restores:
 	@for d in `ls backup`;do echo "backup/$${d}"; done
+
+.PHONY: info
+info:
+	cd terraform-setup && terraform output

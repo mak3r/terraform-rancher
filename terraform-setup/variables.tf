@@ -28,6 +28,12 @@ variable "db_instance_type" {
   default = "db.t2.micro"
 }
 
+variable "instance_type" {
+  type = string
+  description = "The aws model name for the k3s host instances"
+  default = "db.t2.micro"
+}
+
 variable "rancher_url" {
 	type = string
 	description = "The subdomain for this rancher installation"

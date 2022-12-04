@@ -57,8 +57,8 @@ Restoration may take some time even after the make process ends as kubernetes mu
 
 ## Advanced Arguments on Rancher Creation
 
-* Set the admin password, rancher subdomain and a local backup location
-    * `make RANCHER_SUBDOMAIN="your-best-subdomain" ADMIN_SECRET="one-two-three" BACKUP_LOCATION="backup/named_loc" LETS_ENCRYPT_USER="user@email.org" rancher`
+* Set the admin password, rancher subdomain 
+    * `make RANCHER_SUBDOMAIN="your-best-subdomain" ADMIN_SECRET="one-two-three" LETS_ENCRYPT_USER="user@email.org" rancher`
 * Backup to a named backup location
     * `make BACKUP_LOCATION="backup/named_loc" backup_rancher`
     * Store your `ADMIN_SECRET` somewhere so that you can use it when you restore
