@@ -1,10 +1,10 @@
 SHELL := /bin/bash
 K3S_TOKEN="mak3rVA87qPxet2SB8BDuLPWfU2xnPUSoETYF"
-RANCHER_VERSION="2.7.0"
+RANCHER_VERSION="2.7.4"
 SERVER_NUM=-1
 ADMIN_SECRET="6DfOqQMzaNFTg6VV"
-K3S_CHANNEL=v1.23
-K3S_UPGRADE_CHANNEL=v1.24
+K3S_CHANNEL=v1.25
+K3S_UPGRADE_CHANNEL=v1.26
 RANCHER_SUBDOMAIN=tf-rancher
 SQL_PASSWORD="Kw309ii9mZpqD"
 export KUBECONFIG=kubeconfig
@@ -77,6 +77,7 @@ rancher_app:
 	  --set ingress.tls.source=letsEncrypt \
 	  --set letsEncrypt.email=${LETS_ENCRYPT_USER} \
 	  --set letsEncrypt.ingress.class=traefik \
+	  --set global.cattle.psp.enabled=false \
 	  --create-namespace 
 	kubectl rollout status deployment -n cattle-system rancher
 	kubectl -n cattle-system wait --for=condition=ready certificate/tls-rancher-ingress
