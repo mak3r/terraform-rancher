@@ -16,7 +16,7 @@ API_TOKEN="abcdef:EXAMPLEtokenGoesHere"
 DOWNSTREAM_COUNT=0
 RANCHER_NODE_COUNT=1
 BACKUP_LOCATION="backup"
-LETS_ENCRYPT_USER="user@email.org"
+LETS_ENCRYPT_USER="user_at_email_dot_org"
 # traefik (k3s) | nginx (rke2)
 LETS_ENCRYPT_INGRESS_CLASS="traefik"
 
