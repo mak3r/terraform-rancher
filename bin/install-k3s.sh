@@ -21,4 +21,4 @@ sed -i""  "s/{HOSTNAME}/$(hostname)/" k3s-config/config.yaml
 sudo mkdir -p /etc/rancher/k3s
 sudo cp k3s-config/config.yaml /etc/rancher/k3s/config.yaml
 curl -sfL https://get.k3s.io | INSTALL_K3S_CHANNEL=$K3S_CHANNEL sh -
-sudo chown $(whoami):$(id -gn) ~/.kube/config
+ME=$(whoami); MYID=$(id -gn); sudo chown $ME:$MYID ~/.kube/config

@@ -5,7 +5,7 @@ resource "aws_key_pair" "ssh_key_pair" {
 
 # Security group to allow all traffic
 resource "aws_security_group" "sg_allowall" {
-  name        = "${var.prefix}-rancher-k3s-sql-allowall"
+  name        = "${var.prefix}-tf-rancher-allowall"
 
   ingress {
     from_port   = "0"
@@ -26,7 +26,7 @@ resource "aws_security_group" "sg_allowall" {
 resource "aws_instance" "rancher" {
   count         = var.rancher_node_count
   ami           = data.aws_ami.suse.id
-  instance_type = "t3a.medium"
+  instance_type = var.instance_type
 
   key_name        = aws_key_pair.ssh_key_pair.key_name
   security_groups = [aws_security_group.sg_allowall.name]

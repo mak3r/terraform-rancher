@@ -1,11 +1,14 @@
 SHELL := /bin/bash
 K3S_TOKEN="mak3rVA87qPxet2SB8BDuLPWfU2xnPUSoETYF"
-RANCHER_VERSION="2.7.4"
+RKE2_TOKEN="mak3rVA87qPxet2SB8BDuLPWfU2xnPUSoETYF"
+RANCHER_VERSION="2.8.2"
+TURTLES_VERSION="v0.4.0"
+CERT_MANAGER_VERSION="v1.12.7"
 SERVER_NUM=-1
 ADMIN_SECRET="6DfOqQMzaNFTg6VV"
-K3S_CHANNEL=v1.25
-K3S_UPGRADE_CHANNEL=v1.26
-RANCHER_SUBDOMAIN=tf-rancher
+K3S_CHANNEL=v1.27
+RKE2_CHANNEL=v1.27
+RANCHER_SUBDOMAIN=demo
 SQL_PASSWORD="Kw309ii9mZpqD"
 export KUBECONFIG=kubeconfig
 BACKUP_NAME=kubeconfig.tf_rancher
@@ -14,19 +17,29 @@ DOWNSTREAM_COUNT=0
 RANCHER_NODE_COUNT=1
 BACKUP_LOCATION="backup"
 LETS_ENCRYPT_USER="user@email.org"
+# traefik (k3s) | nginx (rke2)
+LETS_ENCRYPT_INGRESS_CLASS="traefik"
+
 
 .PHONY: destroy
 destroy:
 	-rm kubeconfig
-	cd terraform-setup && terraform destroy -auto-approve && rm terraform.tfstate terraform.tfstate.backup
+	cd opentofu-setup && tofu destroy -auto-approve && rm terraform.tfstate terraform.tfstate.backup
 
-.PHONY: rancher
-rancher: infrastructure k3s_install rancher_app
+.PHONY: pause
+pause: 
+	sleep 60
+
+.PHONY: rke2_rancher
+rke2_rancher: infrastructure pause rke2_install pause rancher_app
+
+.PHONY: k3s_rancher
+k3s_rancher: infrastructure pause k3s_install pause rancher_app
 
 .PHONY: infrastructure
 infrastructure:
 	echo "Creating infrastructure"
-	cd terraform-setup && terraform init && terraform apply -auto-approve -var rancher_url=$(RANCHER_SUBDOMAIN) -var db_password=$(SQL_PASSWORD) -var downstream_count=$(DOWNSTREAM_COUNT) -var rancher_node_count=$(RANCHER_NODE_COUNT)
+	cd opentofu-setup && tofu init && tofu apply -auto-approve -var rancher_url=$(RANCHER_SUBDOMAIN) -var db_password=$(SQL_PASSWORD) -var downstream_count=$(DOWNSTREAM_COUNT) -var rancher_node_count=$(RANCHER_NODE_COUNT)
 
 .PHONY: k3s_sql_install
 k3s_sql_install: 
@@ -38,11 +51,22 @@ k3s_sql_install:
 	source bin/get-env.sh && sed -i '' "s/127.0.0.1/$${IP0}/g" kubeconfig
 
 .PHONY: k3s_install
+# Be sure to update the ingress controller
+#--set letsEncrypt.ingress.class=traefik
 k3s_install:
 	echo "Creating k3s cluster"
 	source bin/get-env.sh && ssh -o StrictHostKeyChecking=no ec2-user@$${IP0} '/bin/bash -s' -- < bin/install-k3s.sh "$(K3S_CHANNEL)" "$${IP0}"
 	source bin/get-env.sh && scp -o StrictHostKeyChecking=no ec2-user@$${IP0}:/etc/rancher/k3s/k3s.yaml kubeconfig
-	source bin/get-env.sh && sed -i '' "s/127.0.0.1/$${IP0}/g" kubeconfig
+	source bin/get-env.sh && sed -i'' "s/127.0.0.1/$${IP0}/g" kubeconfig
+
+.PHONY: rke2_install
+# Be sure to update the ingress controller
+#--set letsEncrypt.ingress.class=nginx
+rke2_install:
+	echo "Creating rke2 cluster"
+	source bin/get-env.sh && ssh -o StrictHostKeyChecking=no ec2-user@$${IP0} '/bin/bash -s' -- < bin/install-rke2.sh "$(RKE2_CHANNEL)" "$${IP0}"
+	source bin/get-env.sh && scp -o StrictHostKeyChecking=no ec2-user@$${IP0}:/home/ec2-user/.kube/config kubeconfig
+	source bin/get-env.sh && sed -i'' "s/127.0.0.1/$${IP0}/g" kubeconfig
 
 .PHONY: backup_kubeconfig
 backup_kubeconfig:
@@ -59,58 +83,45 @@ restore_kubeconfig:
 .PHONY: rancher_app
 rancher_app: 
 	echo "Installing cert-manager and Rancher"
-	kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/v1.9.1/cert-manager.crds.yaml
+	kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/${CERT_MANAGER_VERSION}/cert-manager.crds.yaml
+helm repo add jetstack https://charts.jetstack.io
+	helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
 	helm repo update
 	helm upgrade --install \
 		  cert-manager jetstack/cert-manager \
 		  --namespace cert-manager \
-		  --version v1.9.1 \
+		  --version ${CERT_MANAGER_VERSION} \
 		  --create-namespace 
 	kubectl rollout status deployment -n cert-manager cert-manager
 	kubectl rollout status deployment -n cert-manager cert-manager-webhook
-	source bin/get-env.sh && helm upgrade --install rancher rancher-latest/rancher \
+	source bin/get-env.sh && helm upgrade --install rancher rancher-stable/rancher \
 	  --namespace cattle-system \
+--create-namespace \
 	  --version ${RANCHER_VERSION} \
 	  --set hostname=$${URL} \
 	  --set bootstrapPassword=${ADMIN_SECRET} \
 	  --set replicas=1 \
 	  --set ingress.tls.source=letsEncrypt \
 	  --set letsEncrypt.email=${LETS_ENCRYPT_USER} \
-	  --set letsEncrypt.ingress.class=traefik \
-	  --set global.cattle.psp.enabled=false \
-	  --create-namespace 
+	  --set letsEncrypt.ingress.class=${LETS_ENCRYPT_INGRESS_CLASS} 
 	kubectl rollout status deployment -n cattle-system rancher
 	kubectl -n cattle-system wait --for=condition=ready certificate/tls-rancher-ingress
 	@echo
 	@echo
 	@source bin/get-env.sh && echo https://$${URL}/dashboard/?setup=${ADMIN_SECRET}
 
-.PHONY: backup_rancher
-backup_rancher:
-	mkdir -p ${BACKUP_LOCATION}
-	kubectl get node -o=jsonpath='{.items[0].metadata.name}' > ${BACKUP_LOCATION}/node-name
-	source bin/get-env.sh && bin/backup-rancher.sh $${IP0} ${BACKUP_LOCATION}
+.PHONY: capi_install
+capi_install:
+	helm repo add turtles https://rancher-sandbox.github.io/rancher-turtles/
+	helm repo update
+	helm install rancher-turtles turtles/rancher-turtles --version ${TURTLES_VERSION} \
+    -n rancher-turtles-system \
+    --dependency-update \
+    --create-namespace --wait \
+    --timeout 180s \
+	--set cluster-api-operator.cert-manager.enabled=false
 
-.PHONY: restore_rancher
-restore_rancher: infrastructure copy_to_remote k3s_install manual_steps
-
-.PHONY: copy_to_remote
-copy_to_remote:
-	source bin/get-env.sh && bin/restore-rancher.sh $${IP0} ${BACKUP_LOCATION}
-
-.PHONY: manual_steps
-manual_steps:
-	@echo
-	@echo
-	@echo "There is more to do .."
-	@echo "1. make install_kubeconfig"
-	@printf "2. Login to Rancher again.  "
-	@source bin/get-env.sh && echo https://$${URL}/dashboard/
-
-.PHONY: list_restores
-list_restores:
-	@for d in `ls backup`;do echo "backup/$${d}"; done
 
 .PHONY: info
 info:
-	cd terraform-setup && terraform output
+	cd opentofu-setup && tofu output
