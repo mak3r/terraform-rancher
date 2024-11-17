@@ -1,13 +1,15 @@
 SHELL := /bin/bash
 K3S_TOKEN="mak3rVA87qPxet2SB8BDuLPWfU2xnPUSoETYF"
 RKE2_TOKEN="mak3rVA87qPxet2SB8BDuLPWfU2xnPUSoETYF"
-RANCHER_VERSION="2.8.2"
-TURTLES_VERSION="v0.4.0"
+RANCHER_VERSION="2.9.2"
+# rancher-latest | rancher-stable
+HELM_RANCHER_REPO="rancher-latest"
+TURTLES_VERSION="0.12.0"
 CERT_MANAGER_VERSION="v1.12.7"
 SERVER_NUM=-1
-ADMIN_SECRET="6DfOqQMzaNFTg6VV"
-K3S_CHANNEL=v1.27
-RKE2_CHANNEL=v1.27
+ADMIN_SECRET="demo"
+K3S_CHANNEL=v1.29
+RKE2_CHANNEL=v1.29
 RANCHER_SUBDOMAIN=demo
 SQL_PASSWORD="Kw309ii9mZpqD"
 export KUBECONFIG=kubeconfig
@@ -15,12 +17,27 @@ BACKUP_NAME=kubeconfig.tf_rancher
 API_TOKEN="abcdef:EXAMPLEtokenGoesHere"
 DOWNSTREAM_COUNT=0
 RANCHER_NODE_COUNT=1
-BACKUP_LOCATION="backup"
+# agentTLSMode parameter for Rancher Helm Options
+# system-store | strict (default)
+AGENT_TLS_MODE="system-store"
 LETS_ENCRYPT_USER="user_at_email_dot_org"
 # traefik (k3s) | nginx (rke2)
-LETS_ENCRYPT_INGRESS_CLASS="traefik"
+LETS_ENCRYPT_INGRESS_CLASS="nginx"
 
-
+## NOTE ON DESTROY ISSUES ##
+# If you have issues with the destroy command, you may need to add this parameter to the terraform destroy command:
+# This allows deletion of an ami that no longer exists.
+# Planning failed. OpenTofu encountered an error while generating this plan.
+#
+# ╷
+# │ Error: Your query returned no results. Please change your search criteria and try again.
+# │ 
+# │   with data.aws_ami.suse,
+# │   on data.tf line 1, in data "aws_ami" "suse":
+# │    1: data "aws_ami" "suse" {
+# │ 
+# tofu destroy -auto-approve -refresh=false
+##
 .PHONY: destroy
 destroy:
 	-rm kubeconfig
@@ -84,7 +101,8 @@ restore_kubeconfig:
 rancher_app: 
 	echo "Installing cert-manager and Rancher"
 	kubectl apply --validate=false -f https://github.com/jetstack/cert-manager/releases/download/${CERT_MANAGER_VERSION}/cert-manager.crds.yaml
-helm repo add jetstack https://charts.jetstack.io
+	helm repo add jetstack https://charts.jetstack.io
+	helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
 	helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
 	helm repo update
 	helm upgrade --install \
@@ -94,13 +112,14 @@ helm repo add jetstack https://charts.jetstack.io
 		  --create-namespace 
 	kubectl rollout status deployment -n cert-manager cert-manager
 	kubectl rollout status deployment -n cert-manager cert-manager-webhook
-	source bin/get-env.sh && helm upgrade --install rancher rancher-stable/rancher \
+	source bin/get-env.sh && helm upgrade --install rancher ${HELM_RANCHER_REPO}/rancher \
 	  --namespace cattle-system \
---create-namespace \
+	  --create-namespace \
 	  --version ${RANCHER_VERSION} \
 	  --set hostname=$${URL} \
 	  --set bootstrapPassword=${ADMIN_SECRET} \
 	  --set replicas=1 \
+	  --set agentTLSMode=${AGENT_TLS_MODE} \
 	  --set ingress.tls.source=letsEncrypt \
 	  --set letsEncrypt.email=${LETS_ENCRYPT_USER} \
 	  --set letsEncrypt.ingress.class=${LETS_ENCRYPT_INGRESS_CLASS} 
@@ -110,16 +129,18 @@ helm repo add jetstack https://charts.jetstack.io
 	@echo
 	@source bin/get-env.sh && echo https://$${URL}/dashboard/?setup=${ADMIN_SECRET}
 
-.PHONY: capi_install
-capi_install:
-	helm repo add turtles https://rancher-sandbox.github.io/rancher-turtles/
+# Rancher v2.9.2 has turtles automatically installed
+.PHONY: turtles_install
+turtles_install:
+	helm repo add turtles https://rancher.github.io/turtles
 	helm repo update
-	helm install rancher-turtles turtles/rancher-turtles --version ${TURTLES_VERSION} \
+	helm upgrade --install rancher-turtles turtles/rancher-turtles \
+    --version ${TURTLES_VERSION} \
     -n rancher-turtles-system \
     --dependency-update \
     --create-namespace --wait \
     --timeout 180s \
-	--set cluster-api-operator.cert-manager.enabled=false
+    --set cluster-api-operator.cert-manager.enabled=false
 
 
 .PHONY: info
