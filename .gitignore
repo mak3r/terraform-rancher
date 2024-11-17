@@ -30,5 +30,5 @@ override.tf.json
 
 terraform.tfvars
 backup/
-kubeconfig
+kubeconfig*
 scratch/
