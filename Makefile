@@ -1,15 +1,15 @@
 SHELL := /bin/bash
 K3S_TOKEN="mak3rVA87qPxet2SB8BDuLPWfU2xnPUSoETYF"
 RKE2_TOKEN="mak3rVA87qPxet2SB8BDuLPWfU2xnPUSoETYF"
-RANCHER_VERSION="2.9.2"
+RANCHER_VERSION="2.9.3"
 # rancher-latest | rancher-stable
 HELM_RANCHER_REPO="rancher-latest"
-TURTLES_VERSION="0.12.0"
+TURTLES_VERSION="0.14.1"
 CERT_MANAGER_VERSION="v1.12.7"
 SERVER_NUM=-1
 ADMIN_SECRET="demo"
-K3S_CHANNEL=v1.29
-RKE2_CHANNEL=v1.29
+K3S_CHANNEL=v1.30
+RKE2_CHANNEL=v1.30
 RANCHER_SUBDOMAIN=demo
 SQL_PASSWORD="Kw309ii9mZpqD"
 export KUBECONFIG=kubeconfig
@@ -22,7 +22,7 @@ RANCHER_NODE_COUNT=1
 AGENT_TLS_MODE="system-store"
 LETS_ENCRYPT_USER="user_at_email_dot_org"
 # traefik (k3s) | nginx (rke2)
-LETS_ENCRYPT_INGRESS_CLASS="nginx"
+LETS_ENCRYPT_INGRESS_CLASS="traefik"
 
 ## NOTE ON DESTROY ISSUES ##
 # If you have issues with the destroy command, you may need to add this parameter to the terraform destroy command:
