@@ -59,9 +59,3 @@ Restoration may take some time even after the make process ends as kubernetes mu
 
 * Set the admin password, rancher subdomain 
     * `make RANCHER_SUBDOMAIN="your-best-subdomain" ADMIN_SECRET="one-two-three" LETS_ENCRYPT_USER="user@email.org" rancher`
-* Backup to a named backup location
-    * `make BACKUP_LOCATION="backup/named_loc" backup_rancher`
-    * Store your `ADMIN_SECRET` somewhere so that you can use it when you restore
-* Restore from a named backup location
-    * `make RANCHER_SUBDOMAIN="your-best-subdomain" BACKUP_LOCATION="backup/named_loc" restore_rancher`
-    * `RANCHER_SUBDOMAIN` is needed because the load balancer will get created in the infrastructure rebuild step
