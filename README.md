@@ -59,3 +59,14 @@ Restoration may take some time even after the make process ends as kubernetes mu
 
 * Set the admin password, rancher subdomain 
     * `make RANCHER_SUBDOMAIN="your-best-subdomain" ADMIN_SECRET="one-two-three" LETS_ENCRYPT_USER="user@email.org" rancher`
+
+
+## Rancher Prime Installation
+
+1. Configure the Rancher Prime helm repo in the Makefile
+1. Create the infrastructure and add Rancher. 
+
+   `make RANCHER_SUBDOMAIN="your-best-subdomain" ADMIN_SECRET="one-two-three" LETS_ENCRYPT_USER="user@email.org" rancher`
+1. Install the Rancher App collection based on this guide:
+
+   `https://docs.apps.rancher.io/howto-guides/integrate-with-rancher-manager/`

@@ -2,8 +2,8 @@ SHELL := /bin/bash
 K3S_TOKEN="mak3rVA87qPxet2SB8BDuLPWfU2xnPUSoETYF"
 RKE2_TOKEN="mak3rVA87qPxet2SB8BDuLPWfU2xnPUSoETYF"
 RANCHER_VERSION="2.9.3"
-# rancher-latest | rancher-stable
-HELM_RANCHER_REPO="rancher-latest"
+# rancher-latest | rancher-stable | rancher-prime
+HELM_RANCHER_REPO="rancher-prime"
 TURTLES_VERSION="0.14.1"
 CERT_MANAGER_VERSION="v1.12.7"
 SERVER_NUM=-1
@@ -104,6 +104,7 @@ rancher_app:
 	helm repo add jetstack https://charts.jetstack.io
 	helm repo add rancher-latest https://releases.rancher.com/server-charts/latest
 	helm repo add rancher-stable https://releases.rancher.com/server-charts/stable
+	helm repo add rancher-prime https://charts.rancher.com/server-charts/prime
 	helm repo update
 	helm upgrade --install \
 		  cert-manager jetstack/cert-manager \
