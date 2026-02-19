@@ -1,15 +1,15 @@
 SHELL := /bin/bash
 K3S_TOKEN="mak3rVA87qPxet2SB8BDuLPWfU2xnPUSoETYF"
 RKE2_TOKEN="mak3rVA87qPxet2SB8BDuLPWfU2xnPUSoETYF"
-RANCHER_VERSION="2.9.3"
+RANCHER_VERSION="2.12.2"
 # rancher-latest | rancher-stable | rancher-prime
 HELM_RANCHER_REPO="rancher-prime"
 TURTLES_VERSION="0.14.1"
-CERT_MANAGER_VERSION="v1.12.7"
+CERT_MANAGER_VERSION="v1.18.2"
 SERVER_NUM=-1
 ADMIN_SECRET="demo"
-K3S_CHANNEL=v1.30
-RKE2_CHANNEL=v1.30
+K3S_CHANNEL=v1.32
+RKE2_CHANNEL=v1.32
 RANCHER_SUBDOMAIN=demo
 SQL_PASSWORD="Kw309ii9mZpqD"
 export KUBECONFIG=kubeconfig
@@ -45,7 +45,7 @@ destroy:
 
 .PHONY: pause
 pause: 
-	sleep 60
+	sleep 90
 
 .PHONY: rke2_rancher
 rke2_rancher: infrastructure pause rke2_install pause rancher_app
